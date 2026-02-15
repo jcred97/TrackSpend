@@ -1,0 +1,49 @@
+/* ✅ Modal container - smoother, smaller shadow */
+.slds-modal__container {
+    border-radius: 0.75rem;
+    animation: modalFadeIn 0.25s ease-out;
+    transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+}
+
+/* ✅ Hide date helper text */
+.date-format-hide .slds-form-element__help {
+    display: none;
+}
+
+/* KPI styling (if used elsewhere) */
+.kpi {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* ✅ Fade-in / fade-out animation */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+}
+
+/* ✅ Add fade effect on modal open/close */
+.slds-modal.fade-in {
+    animation: modalFadeIn 0.25s ease-out forwards;
+}
+
+.slds-modal.fade-out {
+    animation: modalFadeOut 0.25s ease-in forwards;
+}

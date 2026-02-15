@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>BPI</fullName>
+        <default>false</default>
+        <label>BPI</label>
+    </customValue>
+    <customValue>
+        <fullName>BDO</fullName>
+        <default>false</default>
+        <label>BDO</label>
+    </customValue>
+    <customValue>
+        <fullName>MariBank</fullName>
+        <default>false</default>
+        <label>MariBank</label>
+    </customValue>
+    <customValue>
+        <fullName>Metrobank</fullName>
+        <default>false</default>
+        <label>Metrobank</label>
+    </customValue>
+    <masterLabel>Bank</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>
