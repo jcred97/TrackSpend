@@ -38,6 +38,7 @@
     </types>
     <types>
         <members>trackSpendApp</members>
+        <members>trackSpendExpenseModal</members>
         <name>LightningComponentBundle</name>
     </types>
     <types>

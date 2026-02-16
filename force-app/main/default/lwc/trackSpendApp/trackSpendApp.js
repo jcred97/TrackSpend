@@ -1,29 +1,31 @@
-import { LightningElement, track, wire } from 'lwc';
+import { LightningElement, wire } from 'lwc';
 import { loadStyle } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import removeDateFormatStyle from '@salesforce/resourceUrl/RemoveDateFormatStyle';
+
 import getAllSpendings from '@salesforce/apex/TrackSpendController.getAllSpendings';
 import getCategoriesBySpending from '@salesforce/apex/TrackSpendController.getCategoriesBySpending';
 import getExpensesByFilters from '@salesforce/apex/TrackSpendController.getExpensesByFilters';
 import deleteExpense from '@salesforce/apex/TrackSpendController.deleteExpense';
 
 export default class TrackSpendApp extends LightningElement {
-    @track startDate;
-    @track endDate;
-    @track spendingId = 'All';
-    @track categoryId = 'All';
-    @track spendingOptions = [{ label: 'All', value: 'All' }];
-    @track categoryOptions = [{ label: 'All', value: 'All' }];
-    @track allRows = [];
-    @track rowsToDisplay = [];
-    @track totalIncome = 0;
-    @track totalExpense = 0;
-    @track net = 0;
-    @track sortedBy;
-    @track sortedDirection = 'asc';
-    @track isLoading = false;
-    @track isModalOpen = false;
+
+    startDate;
+    endDate;
+    spendingId = 'All';
+    categoryId = 'All';
+
+    spendingOptions = [{ label: 'All', value: 'All' }];
+    categoryOptions = [{ label: 'All', value: 'All' }];
+
+    allRows = [];
+    rowsToDisplay = [];
+
+    sortedBy;
+    sortedDirection = 'asc';
+    isLoading = false;
+    isModalOpen = false;
 
     visibleCount = 20;
     wiredExpenseResult;
@@ -67,10 +69,12 @@ export default class TrackSpendApp extends LightningElement {
     connectedCallback() {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
         const format = (d) =>
             `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
                 d.getDate()
             ).padStart(2, '0')}`;
+
         this.startDate = format(firstDay);
         this.endDate = format(today);
     }
@@ -80,9 +84,11 @@ export default class TrackSpendApp extends LightningElement {
         if (data) {
             this.spendingOptions = [
                 { label: 'All', value: 'All' },
-                ...data.map((s) => ({ label: s.Name, value: s.Id }))
+                ...data.map(s => ({ label: s.Name, value: s.Id }))
             ];
-        } else if (error) console.error('Error fetching spendings:', error);
+        } else if (error) {
+            this.showToast('Error', 'Failed to load spendings.', 'error');
+        }
     }
 
     @wire(getCategoriesBySpending, { spendingId: '$spendingId' })
@@ -90,9 +96,11 @@ export default class TrackSpendApp extends LightningElement {
         if (data) {
             this.categoryOptions = [
                 { label: 'All', value: 'All' },
-                ...data.map((c) => ({ label: c.Name, value: c.Id }))
+                ...data.map(c => ({ label: c.Name, value: c.Id }))
             ];
-        } else if (error) console.error('Error fetching categories:', error);
+        } else if (error) {
+            this.showToast('Error', 'Failed to load categories.', 'error');
+        }
     }
 
     @wire(getExpensesByFilters, {
@@ -104,8 +112,9 @@ export default class TrackSpendApp extends LightningElement {
     wiredExpenses(result) {
         this.wiredExpenseResult = result;
         const { error, data } = result;
+
         if (data) {
-            this.allRows = data.map((r) => ({
+            this.allRows = data.map(r => ({
                 id: r.Id,
                 expenseDate: r.Expense_Date__c,
                 name: r.Name,
@@ -116,85 +125,43 @@ export default class TrackSpendApp extends LightningElement {
                 transactionType: r.Transaction_Type__c,
                 amount: r.Amount__c
             }));
-            this.calculateSummary();
+
+            this.visibleCount = 20;
             this.rowsToDisplay = this.allRows.slice(0, this.visibleCount);
-        } else if (error) console.error('Error loading expenses:', error);
+        } else if (error) {
+            this.showToast('Error', 'Failed to load expenses.', 'error');
+        }
     }
 
-    calculateSummary() {
-        let income = 0,
-            expense = 0;
-        this.allRows.forEach((r) =>
-            r.transactionType === 'Income' ? (income += r.amount) : (expense += r.amount)
-        );
-        this.totalIncome = income;
-        this.totalExpense = expense;
-        this.net = income - expense;
-    }
+    handleChange(e) {
+        const field = e.target.dataset.field;
+        this[field] = e.detail.value;
 
-    async handleLoadMore() {
-        if (this.rowsToDisplay.length >= this.allRows.length) return;
-        this.isLoading = true;
-        await new Promise((r) => setTimeout(r, 500));
-        this.visibleCount += 10;
-        this.rowsToDisplay = this.allRows.slice(0, this.visibleCount);
-        this.isLoading = false;
+        if (field === 'spendingId') {
+            this.categoryId = 'All';
+        }
     }
 
     handleSort(event) {
         const { fieldName, sortDirection } = event.detail;
         this.sortedBy = fieldName;
         this.sortedDirection = sortDirection;
+
         const isAsc = sortDirection === 'asc';
+
         this.rowsToDisplay = [...this.rowsToDisplay].sort((a, b) =>
             a[fieldName] > b[fieldName] ? (isAsc ? 1 : -1) : (isAsc ? -1 : 1)
         );
     }
 
-    handleChange(e) {
-        const field = e.target.dataset.field;
-        this[field] = e.detail.value;
-        if (field === 'spendingId') this.categoryId = 'All';
-    }
+    async handleLoadMore() {
+        if (this.rowsToDisplay.length >= this.allRows.length) return;
 
-    openModal() {
-        this.isModalOpen = true;
-    }
-
-    closeModal() {
-        this.isModalOpen = false;
-    }
-
-    async handleSuccess() {
-        // Show toast (only once)
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Success',
-                message: 'Expense saved successfully!',
-                variant: 'success'
-            })
-        );
-
-        // Clear fields in modal
-        this.template.querySelectorAll('lightning-input-field').forEach((f) => {
-            if (f && 'value' in f) f.value = null;
-        });
-
-        // Wait and refresh table
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        await refreshApex(this.wiredExpenseResult);
-        this.calculateSummary();
-    }
-
-    handleError(event) {
-        console.error('Error creating expense:', event.detail);
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title: 'Error',
-                message: event.detail?.message || 'Failed to create expense.',
-                variant: 'error'
-            })
-        );
+        this.isLoading = true;
+        await new Promise(r => setTimeout(r, 500));
+        this.visibleCount += 10;
+        this.rowsToDisplay = this.allRows.slice(0, this.visibleCount);
+        this.isLoading = false;
     }
 
     async handleRowAction(event) {
@@ -204,47 +171,38 @@ export default class TrackSpendApp extends LightningElement {
         if (confirm('Are you sure you want to delete this expense?')) {
             try {
                 await deleteExpense({ expenseId: recordId });
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Deleted',
-                        message: 'Expense deleted successfully!',
-                        variant: 'success'
-                    })
-                );
+                this.showToast('Deleted', 'Expense deleted successfully!', 'success');
                 await refreshApex(this.wiredExpenseResult);
             } catch (error) {
-                console.error('Error deleting expense:', error);
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: error.body?.message || 'Failed to delete expense.',
-                        variant: 'error'
-                    })
+                this.showToast(
+                    'Error',
+                    error?.body?.message || 'Failed to delete expense.',
+                    'error'
                 );
             }
         }
     }
 
-    closeModal() {
-        const modal = this.template.querySelector('.slds-modal');
-        if (modal) {
-            modal.classList.remove('fade-in');
-            modal.classList.add('fade-out');
-
-            // Wait for fade-out animation before hiding
-            setTimeout(() => {
-                this.isModalOpen = false;
-            }, 250);
-        } else {
-            this.isModalOpen = false;
-        }
-    }
-
     openModal() {
         this.isModalOpen = true;
-        setTimeout(() => {
-            const modal = this.template.querySelector('.slds-modal');
-            if (modal) modal.classList.add('fade-in');
-        }, 10);
+    }
+
+    handleModalClose() {
+        this.isModalOpen = false;
+    }
+
+    async handleSuccess() {
+        this.showToast('Success', 'Expense saved successfully!', 'success');
+        await refreshApex(this.wiredExpenseResult);
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title,
+                message,
+                variant
+            })
+        );
     }
 }

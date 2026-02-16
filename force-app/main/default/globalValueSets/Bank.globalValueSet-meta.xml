@@ -20,6 +20,11 @@
         <default>false</default>
         <label>Metrobank</label>
     </customValue>
+    <customValue>
+        <fullName>Gcash</fullName>
+        <default>false</default>
+        <label>Gcash</label>
+    </customValue>
     <masterLabel>Bank</masterLabel>
     <sorted>false</sorted>
 </GlobalValueSet>
