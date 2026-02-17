@@ -1,5 +1,6 @@
 import { LightningElement, wire } from 'lwc';
 import { loadStyle } from 'lightning/platformResourceLoader';
+import LightningConfirm from 'lightning/confirm';
 import { refreshApex } from '@salesforce/apex';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import removeDateFormatStyle from '@salesforce/resourceUrl/RemoveDateFormatStyle';
@@ -168,18 +169,24 @@ export default class TrackSpendApp extends LightningElement {
         const recordId = event.detail.row.id;
         if (!recordId) return;
 
-        if (confirm('Are you sure you want to delete this expense?')) {
-            try {
-                await deleteExpense({ expenseId: recordId });
-                this.showToast('Deleted', 'Expense deleted successfully!', 'success');
-                await refreshApex(this.wiredExpenseResult);
-            } catch (error) {
-                this.showToast(
-                    'Error',
-                    error?.body?.message || 'Failed to delete expense.',
-                    'error'
-                );
-            }
+        const confirmed = await LightningConfirm.open({
+            message: 'Are you sure you want to delete this expense?',
+            variant: 'header',
+            label: 'Confirm Deletion'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            await deleteExpense({ expenseId: recordId });
+            this.showToast('Deleted', 'Expense deleted successfully!', 'success');
+            await refreshApex(this.wiredExpenseResult);
+        } catch (error) {
+            this.showToast(
+                'Error',
+                error?.body?.message || 'Failed to delete expense.',
+                'error'
+            );
         }
     }
 
