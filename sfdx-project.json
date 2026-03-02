@@ -5,7 +5,7 @@
       "default": true
     }
   ],
-  "name": "TrackSpend",
+  "name": "sf-trackspend-app",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "65.0"
